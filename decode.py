@@ -49,8 +49,9 @@ def decode_string(encoded_string, decoding_args):
 
     return decoding_function(encoded_string)
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description = "Base64 encode/decode a string\nPossible decoding methods:\n-b\tBase 64\n-z\tZipped")
+    parser = argparse.ArgumentParser(description="Base64 encode/decode a string\nPossible decoding methods:\n-b\tBase 64\n-z\tZipped")
     parser.add_argument('-s', '--string', help='string to decode')
     parser.add_argument('-f', '--filename', help='file to decode')
     parser.add_argument('decoding_methods', help='Decoding methods. Executed from left to right', nargs='+')
