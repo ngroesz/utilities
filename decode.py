@@ -1,12 +1,13 @@
 """Decode an input string. Decoding criteria can be specified in arbitrary order."""
 
-import sys
-import base64
-import argparse
 from cStringIO import StringIO
+import argparse
+import base64
+import functools
+import gzip
+import sys
 import zipfile
 
-import functools
 
 # from https://mathieularose.com/function-composition-in-python/
 def compose(*functions):
@@ -18,6 +19,7 @@ def compose(*functions):
 def base64_decode(string):
     return base64.b64decode(string)
 
+
 def zipfile_decode(string):
     decoded_string = ''
     fp = StringIO(string)
@@ -27,10 +29,25 @@ def zipfile_decode(string):
             decoded_string += m.read()
     return decoded_string
 
+
+def gzip_decode(string):
+    fp = StringIO(string)
+    f = gzip.GzipFile(fileobj=fp)
+    return f.read()
+
+
 decoding_methods = {
-    'b': base64_decode,
+    'b64': base64_decode,
+    'gz': gzip_decode,
     'z': zipfile_decode,
 }
+
+
+def decode_string(encoded_string, decoding_args):
+    functions = list(reversed(map(lambda x: decoding_methods[x], decoding_args)))
+    decoding_function = compose(*functions)
+
+    return decoding_function(encoded_string)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = "Base64 encode/decode a string\nPossible decoding methods:\n-b\tBase 64\n-z\tZipped")
@@ -40,18 +57,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    string = None
+    encoded_string = None
     if args.string:
-        string = args.string
+        encoded_string = args.string
     elif args.filename:
         with open(args.filename, 'r') as f:
-            string = f.readlines()
+            encoded_string = f.read()
     else:
         print('Either --string or --filename is required.')
         sys.exit()
 
-    functions = list(reversed(map(lambda x: decoding_methods[x], args.decoding_methods)))
-
-    decoding_function = compose(*functions)
-
-    print(decoding_function(string))
+    print(decode_string(encoded_string, args.decoding_methods))
