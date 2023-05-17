@@ -1,6 +1,9 @@
-"""Decode an input string. Decoding criteria can be specified in arbitrary order."""
+#!/usr/bin/env python3
 
-from cStringIO import StringIO
+"""Decode an input string for N number of encodings. Decoding criteria can be specified in arbitrary order."""
+
+from io import StringIO
+from urllib.parse import unquote
 import argparse
 import base64
 import functools
@@ -36,15 +39,20 @@ def gzip_decode(string):
     return f.read()
 
 
+def url_decode(string):
+  return unquote(string)
+
+
 decoding_methods = {
     'b64': base64_decode,
     'gz': gzip_decode,
     'z': zipfile_decode,
+    'u': url_decode,
 }
 
 
 def decode_string(encoded_string, decoding_args):
-    functions = list(reversed(map(lambda x: decoding_methods[x], decoding_args)))
+    functions = reversed(list(map(lambda x: decoding_methods[x], decoding_args)))
     decoding_function = compose(*functions)
 
     return decoding_function(encoded_string)

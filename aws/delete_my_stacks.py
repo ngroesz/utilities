@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+import argparse
 import boto3
 import sys
+
+from common import search_for_matching_stacks
 
 MATCHING_STACK_KEYWORD = 'ngroesz'
 
@@ -40,13 +43,8 @@ def query_yes_no(question, default='no'):
             sys.stdout.write("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
-def search_and_delete_stacks():
-    stacks_to_delete = []
-
-    paginator = stack_session.get_paginator('list_stacks')
-    response_iterator = paginator.paginate(StackStatusFilter=['CREATE_COMPLETE'])
-    for page in response_iterator:
-        stacks_to_delete.extend(filter(lambda s: MATCHING_STACK_KEYWORD in s['StackName'], page['StackSummaries']))
+def search_and_delete_stacks(args):
+    stacks_to_delete = search_for_matching_stacks(stack_session, args.keyword or MATCHING_STACK_KEYWORD, args.exact)
 
     if len(stacks_to_delete) == 0:
         print('No matching stacks found.')
@@ -62,5 +60,12 @@ def delete_stacks(stacks_to_delete):
     for stack in stacks_to_delete:
        stack_session.delete_stack(StackName=stack['StackId'])
 
+
 if __name__ == '__main__':
-    search_and_delete_stacks()
+    parser = argparse.ArgumentParser(description='delete some stacks')
+    parser.add_argument('--keyword', '-k', help='matching keyword')
+    parser.add_argument('--exact', '-x', action='store_true', help='exact ending matches only')
+
+    args = parser.parse_args()
+
+    search_and_delete_stacks(args)

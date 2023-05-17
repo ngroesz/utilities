@@ -1,28 +1,30 @@
 #!/usr/bin/env python
 
+import argparse
 import boto3
 import sys
+
+from common import search_for_matching_stacks
 
 MATCHING_STACK_KEYWORD = 'ngroesz'
 
 session = boto3.Session(region_name='us-west-2')
 stack_session = session.client('cloudformation')
 
-# TODO: common search and list function
-def search_and_list_stacks():
-    stacks = []
-
-    paginator = stack_session.get_paginator('list_stacks')
-    response_iterator = paginator.paginate(StackStatusFilter=['CREATE_COMPLETE'])
-    for page in response_iterator:
-        stacks.extend(filter(lambda s: MATCHING_STACK_KEYWORD in s['StackName'], page['StackSummaries']))
+def list_stacks(args):
+    stacks = search_for_matching_stacks(stack_session, args.keyword or MATCHING_STACK_KEYWORD, args.exact)
 
     if len(stacks) == 0:
         print('No matching stacks found.')
-        return
 
     for stack in stacks:
         print('{stack_name} ({stack_id})'.format(stack_name=stack['StackName'], stack_id=stack['StackId']))
 
 if __name__ == '__main__':
-    search_and_list_stacks()
+    parser = argparse.ArgumentParser(description='list some stacks')
+    parser.add_argument('--keyword', '-k', help='matching keyword')
+    parser.add_argument('--exact', '-x', action='store_true', help='exact ending matches only')
+
+    args = parser.parse_args()
+
+    list_stacks(args)
